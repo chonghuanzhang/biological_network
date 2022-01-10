@@ -17,12 +17,17 @@ def load_reaxys_mols():
 def load_drug_mols():
     return pd.read_pickle(DRUG_MOL_PATH).dropna(subset=['merge_id'])
 
+
 def load_mol_fps():
     return pd.read_pickle(MOL_FPS_PATH)
 
 
 def load_kegg_rxns():
     return pd.read_pickle(KEGG_RXN_PATH).dropna(subset=['react', 'prod'])
+
+
+def load_single_kegg_rxns():
+    return pd.read_pickle(KEGG_SINGLE_RXN_PATH)
 
 
 def load_kegg_net():
@@ -39,6 +44,22 @@ def load_reaxys_x_net():
 
 def load_hybrid_net():
     return pd.read_pickle(HYBRID_NET_PATH)
+
+
+def load_pred_mol_db():
+    return pd.read_pickle(PRED_MOL_DB_PATH)
+
+
+def load_pred_mol_history():
+    return pd.read_pickle(PRED_MOL_HISTORY_PATH)
+
+
+def load_pred_rxn_db():
+    return pd.read_pickle(PRED_RXN_DB_PATH)
+
+
+def load_pred_rxn_history():
+    return pd.read_pickle(PRED_RXN_HISTORY_PATH)
 
 
 def mol_merge_reaxys(mols, source_mols):
@@ -62,6 +83,10 @@ def load_excluded_metabolites():
                                     'cofactors'
                                     ])
     return free_metabolite.union(cofactor)
+
+
+def load_simcomp():
+    return pd.read_pickle(SIMCOMP_PATH)
 
 
 logging.basicConfig(
