@@ -25,12 +25,12 @@ class MoleculePrediction:
         self.rxn_pred = ReactionPrediction()
 
     def iter_target_mols(self):
-        for mol in self.mols.index[9:100]:
+        for mol in self.mols.index:
             try:
                 self.load_mol(mol)
 
             except Exception:
-                pass
+                continue
 
     def one2one_wire(self):
         self.rxns['pred_origin'] = np.nan
@@ -49,11 +49,19 @@ class MoleculePrediction:
         for self.similar_mol in self.similar_mols:
             self.find_ref_rxn()
             if not self.ref_rxn.empty:
+                try:
+                    mol = Chem.AddHs(Chem.MolFromSmiles(self.mols.loc[self.mol]['SMILES']))
+                    similar_mol = Chem.AddHs(Chem.MolFromSmiles(self.mols.loc[self.similar_mol]['SMILES']))
+                    self.mcs_mol = self.rxn_pred.compute_mcs(mol, similar_mol)
+                except Exception:
+                    continue
+
                 for i,rxn in self.ref_rxn.iterrows():
                     logger.debug('TARGET MOL: {}, SIMILAR MOL: {}, REFERENCE RXN: {}'.format(self.mol, self.similar_mol, i))
                     self.rxn_pred.load_rxn(rxn,
                                            self.mols.loc[self.mol]['SMILES'],
-                                           self.mol
+                                           self.mol,
+                                           self.mcs_mol
                                            )
 
     def find_ref_rxn(self):
@@ -74,10 +82,11 @@ class ReactionPrediction:
 
         self.database = PredictedDatabaseRegistration()
 
-    def load_rxn(self, rxn, mol, mol_id):
+    def load_rxn(self, rxn, mol, mol_id, mcs_mol):
         self.mol = Chem.AddHs(Chem.MolFromSmiles(mol))
         self.mol_smiles = mol
         self.mol_id = mol_id
+        self.mcs_mol = mcs_mol
 
         self.rxn = rxn
         react = self.rxn['react_smiles']
@@ -99,10 +108,11 @@ class ReactionPrediction:
         mol = Chem.MolFromSmarts(mcs.smartsString)
         return mol
 
+
     def subgraph_check(self):
         try:
             self.mcs_rxn = self.compute_mcs(self.react, self.prod)
-            self.mcs_mol = self.compute_mcs(self.mol, self.similar_mol)
+            # self.mcs_mol = self.compute_mcs(self.mol, self.similar_mol)
 
             self.similar_mol_res = AllChem.DeleteSubstructs(self.similar_mol, self.mcs_rxn)
 
@@ -225,3 +235,5 @@ if __name__ == '__main':
 
     pred = MoleculePrediction()
     pred.iter_target_mols()
+
+#%%

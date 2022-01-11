@@ -2,6 +2,7 @@ from constants import *
 #%%
 import pandas as pd
 import logging
+import signal
 import sys
 
 
@@ -99,3 +100,21 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+def timeout(func, input, time_out):
+    class TimeoutError(Exception):
+        pass
+    def handler(signum, frame):
+        raise TimeoutError()
+    # set the timeout handler
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(time_out)
+    try:
+        output = func(input)
+    except TimeoutError:
+        logger.debug(str(func), ' gets time out. The function is terminated.')
+        output = False
+    finally:
+        signal.alarm(0)
+    return output
