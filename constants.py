@@ -32,3 +32,13 @@ PRED_MOL_DB_PATH = os.path.join(DB_PATH, 'kegg_database/pred_mol_db.pkl')
 PRED_MOL_HISTORY_PATH = os.path.join(DB_PATH, 'kegg_database/pred_mol_history.pkl')
 PRED_RXN_DB_PATH = os.path.join(DB_PATH, 'kegg_database/pred_rxn_db.pkl')
 PRED_RXN_HISTORY_PATH = os.path.join(DB_PATH, 'kegg_database/pred_rxn_history.pkl')
+
+# local: delete later
+# KEGG_MOL_PATH = 'kegg_database/kegg_molecule_pd.pkl'
+# SIMCOMP_PATH = 'kegg_database/SIMCOMP.pkl'
+# KEGG_SINGLE_RXN_PATH = 'kegg_database/kegg_one2one_reaction_pd.pkl'
+
+# PRED_MOL_DB_PATH = 'kegg_database/pred_mol_db.pkl'
+# PRED_MOL_HISTORY_PATH = 'kegg_database/pred_mol_history.pkl'
+# PRED_RXN_DB_PATH = 'kegg_database/pred_rxn_db.pkl'
+# PRED_RXN_HISTORY_PATH = 'kegg_database/pred_rxn_history.pkl'

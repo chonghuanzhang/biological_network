@@ -133,3 +133,6 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+# local
+kegg_database/

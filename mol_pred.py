@@ -18,7 +18,7 @@ class MoleculePrediction:
         # data from SIMCOMP api
         self.simcomp_mols = load_simcomp()
 
-        self.rxns = load_kegg_rxns()
+        # self.rxns = load_kegg_rxns()
         # self.one2one_wire()
         self.single_rxns = load_single_kegg_rxns()
 
@@ -170,9 +170,6 @@ class PredictedDatabaseRegistration:
         self.rxnDB = pd.DataFrame(columns=self.rxns.columns)
         self.rxn_history = self.rxnDB.copy()
 
-        self.mol_counter = 0
-        self.rxn_counter = 0
-
     def register_mol(self, smiles, origin_rxn, origin_mol):
         # Check if the molecule in KEGG mols and molDB
         check_kegg = self.mols[self.mols.SMILES == smiles]
@@ -185,8 +182,9 @@ class PredictedDatabaseRegistration:
             self.mol_id = check_db.index[0]
 
         else:
-            self.mol_counter += 1
+            self.mol_counter = len(self.molDB) + 1
             self.mol_id = 'PC'+ str(self.mol_counter) # 'PC': Predicted compound
+            logger.debug('PREDICTED MOLECULE: {}'.format(self.mol_id))
             self.molDB.loc[self.mol_id] = [smiles, origin_rxn.name, origin_mol, origin_rxn.direct]
 
             self.molDB.to_pickle(PRED_MOL_DB_PATH)
@@ -217,8 +215,9 @@ class PredictedDatabaseRegistration:
             self.rxn_id = check_db.index[0]
 
         else:
-            self.rxn_counter += 1
+            self.rxn_counter = len(self.rxnDB) + 1
             self.rxn_id = 'PR'+ str(self.rxn_counter) # 'PC': Predicted reaction
+            logger.debug('PREDICTED REACTION: {}'.format(self.rxn_id))
             self.rxnDB.loc[self.rxn_id] = rxn
 
             self.rxnDB.to_pickle(PRED_RXN_DB_PATH)
