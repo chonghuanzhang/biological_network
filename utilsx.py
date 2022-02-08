@@ -23,6 +23,14 @@ def load_mol_fps():
     return pd.read_pickle(MOL_FPS_PATH)
 
 
+def load_enzymes():
+    return pd.read_pickle(ENZYME_PATH)
+
+
+def load_msc_pairs():
+    return pd.read_pickle(MCS_PAIRS_PATH)
+
+
 def load_kegg_rxns():
     return pd.read_pickle(KEGG_RXN_PATH).dropna(subset=['react', 'prod'])
 

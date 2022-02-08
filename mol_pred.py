@@ -23,6 +23,7 @@ class MoleculePrediction:
         self.single_rxns = load_single_kegg_rxns()
 
         self.rxn_pred = ReactionPrediction()
+        # self.mcs_pairs = load_msc_pairs()
 
     def iter_target_mols(self):
         for mol in self.mols.index:

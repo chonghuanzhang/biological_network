@@ -10,6 +10,12 @@ KEGG_MOL_PATH = os.path.join(DB_PATH, 'kegg_database/kegg_molecule_pd.pkl')
 DRUG_MOL_PATH = os.path.join(DB_PATH, 'kegg_database/drug_molecule_pd.pkl')
 MOL_FPS_PATH = os.path.join(DB_PATH, 'results/mol_fps.pkl')
 
+# Enzyme
+ENZYME_PATH = os.path.join(DB_PATH, 'kegg_database/enzyme_pd.pkl')
+
+# Pre-calculated MCS results for molecule pairs
+MCS_PAIRS_PATH = os.path.join(DB_PATH, 'kegg_database/mcs_pairs.pkl')
+
 # Curated metabolite library
 METABOLITE_LIB_PATH = os.path.join(DB_PATH, 'kegg_database/metabolite_library.xlsx')
 
