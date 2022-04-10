@@ -34,10 +34,18 @@ HYBRID_NET_PATH = os.path.join(DB_PATH, 'network/hybrid_stellargraph.pkl')
 SIMCOMP_PATH = os.path.join(DB_PATH, 'kegg_database/SIMCOMP.pkl')
 
 # Save results
+MCS_PAIR_PATH = os.path.join(DB_PATH, 'kegg_database/mcs_pairs.pkl')
 PRED_MOL_DB_PATH = os.path.join(DB_PATH, 'kegg_database/pred_mol_db.pkl')
 PRED_MOL_HISTORY_PATH = os.path.join(DB_PATH, 'kegg_database/pred_mol_history.pkl')
 PRED_RXN_DB_PATH = os.path.join(DB_PATH, 'kegg_database/pred_rxn_db.pkl')
 PRED_RXN_HISTORY_PATH = os.path.join(DB_PATH, 'kegg_database/pred_rxn_history.pkl')
+
+# Amino acid sequence
+AASEQ_DB_PATH = os.path.join(DB_PATH, 'aaseq/aaseqCrawler')
+AASEQ_TEXT_PATH = os.path.join(DB_PATH, 'aaseq/aaseq_dict.pkl')
+TOKEN_SEQ_PATH = os.path.join(DB_PATH, 'aaseq/token_aaseq_dict.pkl')
+EC_GENE_PAIR_PATH = os.path.join(DB_PATH, 'aaseq/ec_gene_pair.pkl')
+EC_GENE_TOKEN_PATH = os.path.join(DB_PATH, 'aaseq/ec_gene_token.pkl')
 
 # local: delete later
 # KEGG_MOL_PATH = 'kegg_database/kegg_molecule_pd.pkl'

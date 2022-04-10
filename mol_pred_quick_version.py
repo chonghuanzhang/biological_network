@@ -9,6 +9,7 @@ from rdkit.Chem import AllChem
 import warnings
 warnings.filterwarnings("ignore")
 
+
 class MoleculePrediction:
 
     def __init__(self):
@@ -23,7 +24,7 @@ class MoleculePrediction:
         self.single_rxns = load_single_kegg_rxns()
 
         self.rxn_pred = ReactionPrediction()
-        # self.mcs_pairs = load_msc_pairs()
+        self.mcs_pairs = load_msc_pairs()
 
 
     def iter_target_mols(self):
@@ -45,6 +46,13 @@ class MoleculePrediction:
         self.single_rxns['prod_smiles'] = list(self.mols.loc[self.single_rxns['prod']].SMILES)
 
     def load_mol(self, mol):
+
+        def _find_mol_pair(mol1, mol2):
+            if int(mol1[1::]) < int(mol2[1::]):
+                return (mol1,mol2)
+            else:
+                return (mol2, mol1)
+
         self.mol = mol
         self.similar_mols = self.simcomp_mols[self.mol]
 
@@ -52,10 +60,9 @@ class MoleculePrediction:
             self.find_ref_rxn()
             if not self.ref_rxn.empty:
                 try:
-                    mol = Chem.AddHs(Chem.MolFromSmiles(self.mols.loc[self.mol]['SMILES']))
-                    similar_mol = Chem.AddHs(Chem.MolFromSmiles(self.mols.loc[self.similar_mol]['SMILES']))
-                    self.mcs_mol = self.rxn_pred.compute_mcs(mol, similar_mol)
-                except Exception:
+                    mcs_smarts = self.mcs_pairs.loc[_find_mol_pair(self.mol, self.similar_mol)].mcs
+                    self.mcs_mol = Chem.MolFromSmarts(mcs_smarts)
+                except KeyError:
                     continue
 
                 for i,rxn in self.ref_rxn.iterrows():
@@ -81,7 +88,7 @@ class ReactionPrediction:
     def __init__(self, timeout=5, minNumAtoms=2):
         self.timeout = timeout
         self.minNumAtoms = minNumAtoms
-
+        self.mcs_pairs = load_msc_pairs()
         self.database = PredictedDatabaseRegistration()
 
     def load_rxn(self, rxn, mol, mol_id, mcs_mol):
@@ -91,6 +98,9 @@ class ReactionPrediction:
         self.mcs_mol = mcs_mol
 
         self.rxn = rxn
+        self.react_id = self.rxn['react']
+        self.prod_id = self.rxn['prod']
+
         react = self.rxn['react_smiles']
         prod = self.rxn['prod_smiles']
         self.react = Chem.AddHs(Chem.MolFromSmiles(react))
@@ -105,16 +115,18 @@ class ReactionPrediction:
 
         self.subgraph_check()
 
-    def compute_mcs(self, mol1, mol2):
-        mcs = rdFMCS.FindMCS([mol1, mol2], timeout=self.timeout)
-        mol = Chem.MolFromSmarts(mcs.smartsString)
-        return mol
-
 
     def subgraph_check(self):
+
+        def _find_mol_pair(mol1, mol2):
+            if int(mol1[1::]) < int(mol2[1::]):
+                return (mol1,mol2)
+            else:
+                return (mol2, mol1)
+
         try:
-            self.mcs_rxn = self.compute_mcs(self.react, self.prod)
-            # self.mcs_mol = self.compute_mcs(self.mol, self.similar_mol)
+            mcs_smarts = self.mcs_pairs.loc[_find_mol_pair(self.react_id, self.prod_id)].mcs
+            self.mcs_rxn = Chem.MolFromSmarts(mcs_smarts)
 
             self.similar_mol_res = AllChem.DeleteSubstructs(self.similar_mol, self.mcs_rxn)
 

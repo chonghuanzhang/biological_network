@@ -4,7 +4,10 @@ import pandas as pd
 import logging
 import signal
 import sys
+import numpy as np
 
+from rdkit import DataStructs
+from rdkit.Chem.Fingerprints import FingerprintMols
 
 # load pickle files
 def load_kegg_mols():
@@ -55,6 +58,10 @@ def load_hybrid_net():
     return pd.read_pickle(HYBRID_NET_PATH)
 
 
+def load_mcs_pairs():
+    return pd.read_pickle(MCS_PAIR_PATH)
+
+
 def load_pred_mol_db():
     return pd.read_pickle(PRED_MOL_DB_PATH)
 
@@ -69,6 +76,22 @@ def load_pred_rxn_db():
 
 def load_pred_rxn_history():
     return pd.read_pickle(PRED_RXN_HISTORY_PATH)
+
+
+def load_ec_gene_pair():
+    return pd.read_pickle(EC_GENE_PAIR_PATH)
+
+
+def load_ec_gene_token():
+    return pd.read_pickle(EC_GENE_TOKEN_PATH)
+
+
+def load_token_seq():
+    return pd.read_pickle(TOKEN_SEQ_PATH)
+
+
+def load_aaseq_text():
+    return pd.read_pickle(AASEQ_TEXT_PATH)
 
 
 def mol_merge_reaxys(mols, source_mols):
@@ -96,6 +119,10 @@ def load_excluded_metabolites():
 
 def load_simcomp():
     return pd.read_pickle(SIMCOMP_PATH)
+
+
+def load_token_seq():
+    return pd.read_pickle(TOKEN_SEQ_PATH)
 
 
 logging.basicConfig(
@@ -126,3 +153,12 @@ def timeout(func, input, time_out):
     finally:
         signal.alarm(0)
     return output
+
+
+def compute_jaccard(mol1, mol2):
+    fps1 = FingerprintMols.FingerprintMol(mol1)
+    fps2 = FingerprintMols.FingerprintMol(mol2)
+    try:
+        return DataStructs.FingerprintSimilarity(fps1,fps2)
+    except Exception:
+        return np.nan

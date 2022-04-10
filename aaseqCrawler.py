@@ -125,9 +125,11 @@ def get_aaseq(enzyme):
     return sequences
 
 
+
 if __name__ == "__main__":
 
-    address = '/home/cz332/programming/aaseqCrawler/'
+    DB_PATH = '/home/cz332/database/resource/'
+    address = os.path.join(DB_PATH, '/aaseq/aaseqCrawler')
     exist = os.listdir(address)
     exist = [i[0:-4] for i in exist]
 
