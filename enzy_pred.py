@@ -19,12 +19,11 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-from keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 
 
 import warnings
 warnings.filterwarnings("ignore")
-
 
 
 import matplotlib.pyplot as plt
@@ -48,15 +47,20 @@ from rxnfp.transformer_fingerprints import (
 rcParams['figure.figsize'] = 8, 6
 LABELS = ["Normal","Break"]
 
-
-
+import wandb
+from wandb.keras import WandbCallback
 
 
 
 class EnzymePrediction:
     def __init__(self,
-                 nBits=128):
+                 nBits=128,
+                 fp_type='bert',
+                 model='projection'
+                 ):
         self.nBits = nBits
+        self.fp_type = fp_type
+        self.model_method = model
 
         self.mols = load_kegg_mols()
         self.mols.dropna(subset=['SMILES'], inplace=True)
@@ -73,21 +77,40 @@ class EnzymePrediction:
 
 
     def main(self):
+
         self.find_promis_enzy()
         self.form_data()
         self.form_molecule_fps()
         self.form_rxn_fps()
-
         self.form_enzy_var()
-
         self.form_jaccard_dist()
-        self.form_xys()
 
-        self.bert_fps()
+
+def execuate_train(self):
+        if self.fp_type == 'ecfp':
+            self.form_xys()
+
+        elif self.fp_type == 'bert':
+            self.form_bert_fps()
+            self.form_xys_bert_fps()
 
         self.get_aaseq()
 
-    def bert_fps(self):
+        if self.model_method == 'projection':
+            self.train()
+
+        elif self.model_method == 'imbalance':
+
+            if self.fp_type == 'ecfp':
+                self.x_ec_rxn()
+
+            elif self.fp_type == 'bert':
+                self.x_ec_rxn_bert_fps()
+
+            self.imbalance_train()
+
+
+    def form_bert_fps(self):
         def _rxn_fp(r,p):
             return r+'>>'+p
 
@@ -279,6 +302,18 @@ class EnzymePrediction:
         self.Ys.drop([0], axis=1, inplace=True)
 
 
+    def form_xys_bert_fps(self):
+        rxn_fps = self.bert_fps.loc[self.data.index.get_level_values(1)]
+        rxn_fps.index = self.data.index
+
+        self.Xs = rxn_fps
+        self.Xs['dist'] = list(self.rxn_dist)
+
+        Ys = self.ECs.loc[self.data.index.get_level_values(0)]
+        self.Ys = pd.DataFrame(to_categorical(Ys[0])).astype(int)
+        self.Ys.drop([0], axis=1, inplace=True)
+
+
     def form_jaccard_dist(self):
         rxns = pd.DataFrame(index=self.data.index)
         rxns['react'] = list(self.mols.loc[self.data['react']].SMILES.apply(Chem.MolFromSmiles))
@@ -289,7 +324,6 @@ class EnzymePrediction:
 
     def train(self):
         self.model = ProjectionModel()
-        self.model.nBits = self.nBits
 
         self.model.X = self.Xs
         self.model.y = self.Ys
@@ -305,11 +339,30 @@ class EnzymePrediction:
 
 class ProjectionModel:
     def __init__(self):
+
+        self.wandb = wandb
+
         self.optimizer = 'adam'
         self.loss = 'binary_crossentropy'
         self.metrics = ['accuracy']
 
+        self.learning_rate = 0.001
+        self.nb_epoch = 400
+        self.batch_size = 64
+
     def compile_model(self):
+
+        config = {
+            "learning_rate": self.learning_rate,
+            "epochs": self.nb_epoch,
+            "batch_size": self.batch_size
+        }
+
+        self.wandb.init(project="synthetic_network_projection",
+                        entity="chonghuanzhang",
+                        config=config
+                        )
+
         inputs = keras.Input(len(self.X.columns))
         x = layers.BatchNormalization()(inputs)
         x = layers.Dense(50, activation='elu')(x)
@@ -320,7 +373,7 @@ class ProjectionModel:
         x = layers.Dropout(rate=0.3)(x)
         x = layers.Dense(5, activation='elu')(x)
         x = layers.Dropout(rate=0.2)(x)
-        outputs = layers.Dense(1, activation='sigmoid')(x)
+        outputs = layers.Dense(7, activation='sigmoid')(x)
 
         if tf.config.list_physical_devices('GPU'):
             strategy = tf.distribute.MirroredStrategy()
@@ -358,8 +411,13 @@ class ProjectionModel:
                                                                                 test_size=0.2)
 
         self.model.fit(self.X_train, self.y_train,
-                       batch_size=64, epochs=50, validation_split=0.2,
-                       )
+                       epochs=self.nb_epoch,
+                       batch_size=self.batch_size,
+                       validation_split=0.2,
+                       shuffle=True,
+                       verbose=1,
+                       callbacks=[WandbCallback()])
+
         self.validate()
 
 
@@ -377,16 +435,16 @@ class ProjectionModel:
         self.y_test_class = np.argmax(self.y_test, axis=1)
         # 0 means class 1, 1 means class 2 ...
         self.test_result = pd.DataFrame(data={'test': self.y_test_class, 'test_pred': self.y_test_pred_class})
-
-        self.y_test_pred_class = np.around(self.y_test_pred)
-        self.y_test_pred_class = np.argmax(self.y_test_pred_class, axis=1)
-        self.test_result = pd.DataFrame(data={'test': self.y_test, 'test_pred': self.y_test_pred_class})
+        len(self.test_result[self.test_result.test == self.test_result.test_pred])/len(self.test_result)
 
 
 class ImbalancedClassificaton:
     """Autoencoder model for extreme imbalanced classification"""
     """Based on this page: https://towardsdatascience.com/extreme-rare-event-classification-using-autoencoders-in-keras-a565b386f098#:~:text=What%20is%20an%20extreme%20rare,%E2%80%9310%25%20of%20the%20total."""
     def __init__(self):
+
+        self.wandb = wandb
+
         tf.random.set_seed(2)
         self.DATA_SPLIT_PCT = 0.2
         self.SEED = 123
@@ -429,6 +487,18 @@ class ImbalancedClassificaton:
         self.df_test_x_rescaled = self.scaler.transform(self.df_test.drop(['y'], axis=1))
 
     def compile_model(self):
+
+        config = {
+            "learning_rate": self.learning_rate,
+            "epochs": self.nb_epoch,
+            "batch_size": self.batch_size
+        }
+
+        self.wandb.init(project="synthetic_network_imbalance",
+                        entity="chonghuanzhang",
+                        config=config
+                        )
+
         input_dim = self.df_train_0_x_rescaled.shape[1]  # num of predictor variables,
 
         input_layer = Input(shape=(input_dim,))
@@ -464,7 +534,7 @@ class ImbalancedClassificaton:
                                             shuffle=True,
                                             validation_data=(self.df_valid_0_x_rescaled, self.df_valid_0_x_rescaled),
                                             verbose=1,
-                                            callbacks=[self.cp, self.tb]).history
+                                            callbacks=[WandbCallback()]).history
 
 
     def select_threshold(self):
@@ -504,11 +574,13 @@ class ImbalancedClassificaton:
 
 #%%
 if __name__ == '__main__':
-    self = EnzymePrediction(nBits=128)
-    self.main()
-    # self.x_ec_rxn()
-    self.x_ec_rxn_bert_fps()
 
-    # self.train()
-    self.imbalance_train()
-    self.model.main()
+    """
+    fp_type: 'ecfp', 'bert'
+    model: 'projection', 'imbalance'
+    """
+
+    self = EnzymePrediction(fp_type='bert',
+                            model='projection')
+    self.main()
+    self.execuate_train()
