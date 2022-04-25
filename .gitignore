@@ -136,3 +136,9 @@ dmypy.json
 
 # local
 kegg_database/
+
+# wandb
+.wandb
+
+# jupyter
+.ipynb_checkpoints

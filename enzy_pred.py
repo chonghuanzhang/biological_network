@@ -3,6 +3,7 @@ import pandas as pd
 import os
 
 from utilsx import *
+from args import args
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import Normalizer
@@ -86,7 +87,7 @@ class EnzymePrediction:
         self.form_jaccard_dist()
 
 
-def execuate_train(self):
+    def execuate_train(self):
         if self.fp_type == 'ecfp':
             self.form_xys()
 
@@ -108,6 +109,7 @@ def execuate_train(self):
                 self.x_ec_rxn_bert_fps()
 
             self.imbalance_train()
+            self.model.main()
 
 
     def form_bert_fps(self):
@@ -519,7 +521,7 @@ class ImbalancedClassificaton:
                                  loss='mean_squared_error',
                                  optimizer='adam')
 
-        self.cp = ModelCheckpoint(filepath="autoencoder_classifier_20220315.h5",
+        self.cp = ModelCheckpoint(filepath="autoencoder_classifier.h5",
                                   save_best_only=True,
                                   verbose=0)
 

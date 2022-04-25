@@ -4,6 +4,7 @@
     <list>
       <list>
         <remote-mappings server-id="python@f8496736-1540-4ef4-a473-0e29cc853c3d" />
+        <remote-mappings server-id="python@sftp://cz332@172.24.144.187:22/home/cz332/miniconda3/envs/metabolic3.9/bin/python3.9" />
       </list>
     </list>
   </component>
