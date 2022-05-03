@@ -9,13 +9,11 @@ import itertools
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-
-import warnings
-warnings.filterwarnings("ignore")
-
 import pandas as pd
 import numpy as np
 from pylab import rcParams
+
+from tensorflow.keras.utils import to_categorical
 
 from rxnfp.transformer_fingerprints import (
     RXNBERTFingerprintGenerator, get_default_model_and_tokenizer, generate_fingerprints
@@ -24,6 +22,12 @@ from rxnfp.transformer_fingerprints import (
 rcParams['figure.figsize'] = 8, 6
 LABELS = ["Normal","Break"]
 
+# turn of system warning
+import warnings
+warnings.filterwarnings("ignore")
+# turn of rdkit warning
+from rdkit import RDLogger
+RDLogger.DisableLog('rdApp.*')
 
 
 class EnzymePrediction:
@@ -108,15 +112,12 @@ class EnzymePrediction:
         self.data['react_smiles'] = list(self.data['react'].apply(lambda x: self.mols.loc[x].SMILES))
         self.data['prod_smiles'] = list(self.data['prod'].apply(lambda x: self.mols.loc[x].SMILES))
 
-        rxn_smiles = []
-        for index, row in self.data.iterrows():
-            rxn_smiles.append(_rxn_fp(row.react_smiles, row.prod_smiles))
+        self.data['rxn_smiles'] = list(self.data.apply(lambda x: _rxn_fp(x['react_smiles'], x['prod_smiles']), axis=1))
 
         model, tokenizer = get_default_model_and_tokenizer()
-
         rxnfp_generator = RXNBERTFingerprintGenerator(model, tokenizer)
+        fps = rxnfp_generator.convert_batch(self.data.rxn_smiles)
 
-        fps = rxnfp_generator.convert_batch(rxn_smiles)
         self.bert_fps = pd.DataFrame(fps)
         self.bert_fps.index = self.data.index.get_level_values(1)
         self.bert_fps = self.bert_fps[~self.bert_fps.index.duplicated(keep='first')]
@@ -259,13 +260,12 @@ class EnzymePrediction:
 
 
     def form_molecule_fps(self):
+        """convert from molecule id to morgan fingerprints"""
+        def _m2fp(smi):
+            rd_mol = Chem.MolFromSmiles(smi)
+            return list(AllChem.GetMorganFingerprintAsBitVect(rd_mol, self.radius, nBits=self.nBits, useChirality=True))
 
-        def m2fp(mol):
-            """convert from molecule id to morgan fingerprints"""
-            rd_mol = Chem.MolFromSmiles(mol)
-            return list(AllChem.GetMorganFingerprintAsBitVect(rd_mol, 2, nBits=self.nBits, useChirality=True))
-
-        mols = self.mols.SMILES.apply(m2fp)
+        mols = self.mols.SMILES.apply(_m2fp)
         self.mol_fps = pd.DataFrame(list(mols), index=self.mols.index)
 
 
@@ -314,7 +314,7 @@ class EnzymePrediction:
         self.rxn_dist.index = self.rxn_dist.index.get_level_values(1)
 
     def train(self):
-        self.model = ProjectionModel(optimzer=self.op,
+        self.model = ProjectionModel(optimizer=self.op,
                                      loss=self.loss,
                                      learning_rate=self.lr,
                                      epoch=self.epoch,
@@ -329,7 +329,7 @@ class EnzymePrediction:
         self.model.fit()
 
     def imbalance_train(self):
-        self.model = ImbalancedClassificaton(optimzer=self.op,
+        self.model = ImbalancedClassificaton(optimizer=self.op,
                                              loss=self.loss,
                                              learning_rate=self.lr,
                                              epoch=self.epoch,

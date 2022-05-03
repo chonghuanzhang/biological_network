@@ -10,15 +10,13 @@ from sklearn.metrics import precision_recall_fscore_support, f1_score
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from tensorflow.keras.utils import to_categorical
 from keras.models import Model, load_model
 from keras.layers import Input, Dense
 from keras.callbacks import ModelCheckpoint, TensorBoard
 from keras import regularizers
 
-
 import multiprocessing as mp
-
+import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -30,7 +28,7 @@ from wandb.keras import WandbCallback
 
 class ProjectionModel:
     def __init__(self,
-                 optimzer='adam',
+                 optimizer='adam',
                  loss='binary_crossentropy',
                  metrics=['accuracy'],
                  learning_rate=1e-3,
@@ -41,7 +39,7 @@ class ProjectionModel:
 
         self.wandb = wandb
 
-        self.optimizer = optimzer
+        self.optimizer = optimizer
         self.loss = loss
         self.metrics = metrics
 
@@ -53,7 +51,7 @@ class ProjectionModel:
     def compile_model(self):
 
         config = {
-            "optimizer": self.optimzer,
+            "optimizer": self.optimizer,
             "loss": self.loss,
             "metrics": self.metrics,
             "learning_rate": self.learning_rate,
@@ -146,8 +144,8 @@ class ImbalancedClassificaton:
     """Autoencoder model for extreme imbalanced classification"""
     """Based on this page: https://towardsdatascience.com/extreme-rare-event-classification-using-autoencoders-in-keras-a565b386f098#:~:text=What%20is%20an%20extreme%20rare,%E2%80%9310%25%20of%20the%20total."""
     def __init__(self,
-                 optimzer='adam',
-                 loss='mean_square_error',
+                 optimizer='adam',
+                 loss='mean_squared_error',
                  learning_rate='2e-3',
                  metrics=['accuracy'],
                  epoch=100,
@@ -161,7 +159,7 @@ class ImbalancedClassificaton:
         self.DATA_SPLIT_PCT = 0.2
         self.SEED = 123
 
-        self.optimizer = optimzer
+        self.optimizer = optimizer
         self.loss = loss
         self.metrics = metrics
         self.learning_rate = learning_rate
@@ -205,7 +203,7 @@ class ImbalancedClassificaton:
     def compile_model(self):
 
         config = {
-            "optimizer": self.optimzer,
+            "optimizer": self.optimizer,
             "loss": self.loss,
             "metrics": self.metrics,
             "learning_rate": self.learning_rate,
@@ -225,11 +223,18 @@ class ImbalancedClassificaton:
         encoder = Dense(512,
                         activation=self.acti_fc,
                         activity_regularizer=regularizers.l1(self.learning_rate))(input_layer)
+        encoder = Dense(512, activation=self.acti_fc)(encoder)
+        encoder = Dense(256, activation=self.acti_fc)(encoder)
         encoder = Dense(256, activation=self.acti_fc)(encoder)
         encoder = Dense(128, activation=self.acti_fc)(encoder)
+        encoder = Dense(128, activation=self.acti_fc)(encoder)
+        encoder = Dense(64, activation=self.acti_fc)(encoder)
         encoder = Dense(64, activation=self.acti_fc)(encoder)
         decoder = Dense(128, activation=self.acti_fc)(encoder)
+        decoder = Dense(128, activation=self.acti_fc)(decoder)
         decoder = Dense(256, activation=self.acti_fc)(decoder)
+        decoder = Dense(256, activation=self.acti_fc)(decoder)
+        decoder = Dense(512, activation=self.acti_fc)(decoder)
         decoder = Dense(512, activation=self.acti_fc)(decoder)
         decoder = Dense(input_dim, activation="linear")(decoder)
         self.autoencoder = Model(inputs=input_layer, outputs=decoder)
